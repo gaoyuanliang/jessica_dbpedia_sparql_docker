@@ -17,5 +17,12 @@ RUN wget http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_objects_
 
 RUN bzip2 -d mappingbased_objects_en.ttl.bz2
 
+RUN echo "gsdg"
+RUN wget https://raw.githubusercontent.com/gaoyuanliang/jessica_dbpedia_sparql_docker/main/jessica_dbpedia_data_filtering.py
+RUN python jessica_dbpedia_data_filtering.py
+
+RUN git clone https://github.com/gaoyuanliang/jessica_dbpedia_sparql_docker.git
+RUN mv jessica_dbpedia_sparql_docker/* ./
+
 CMD bash
 ############Dockerfile############
