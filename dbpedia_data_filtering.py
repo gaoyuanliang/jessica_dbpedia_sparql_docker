@@ -151,4 +151,21 @@ sqlContext.sql(u"""
 	escapechar="\\",
 	sep="\t")
 
+
+'''
+sqlContext.sql(u"""
+	SELECT relation, COUNT(*) AS triplet_count
+	FROM mappingbased_objects_en1
+	GROUP BY relation
+	""").write.mode('Overwrite').json('triplet_count')
+
+sqlContext.read.json("triplet_count").registerTempTable("triplet_count")
+sqlContext.sql(u"""
+	SELECT * 
+	FROM triplet_count
+	ORDER BY relation DESC
+	LIMIT 1000
+	""").show(1000, False)
+'''
+
 #############dbpedia_data_filtering.py#############
