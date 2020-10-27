@@ -16,6 +16,7 @@ sqlContext = SparkSession.builder.getOrCreate()
 '''
 load the data
 '''
+print('loading the data')
 schema = StructType()\
 	.add("subject",StringType(),True)\
 	.add("relation",StringType(),True)\
@@ -31,6 +32,8 @@ mappingbased_objects_en.registerTempTable('mappingbased_objects_en')
 '''
 filter according to the relation
 '''
+print('filter the data according to the relation')
+
 sqlContext.sql(u"""
 	SELECT *
 	FROM mappingbased_objects_en
@@ -40,6 +43,7 @@ sqlContext.sql(u"""
 '''
 count the subject and object of each entity
 '''
+print('count the subject and object of each entity')
 mappingbased_objects_en1 = sqlContext.read.json("mappingbased_objects_en1")
 mappingbased_objects_en1.registerTempTable('mappingbased_objects_en1')
 #18111905
@@ -102,6 +106,10 @@ sqlContext.sql(u"""
 sort the entities according to the sum of the subject and object count
 pick the top 500000 entities
 '''
+print(u"""
+	sort the entities according to the sum of the subject and object count
+	pick the top 500000 entities
+	""")
 sqlContext.sql(u"""
 	SELECT *
 	FROM entity_count1
@@ -123,6 +131,7 @@ sqlContext.sql(u"""
 '''
 only keep the relations between the picked entities
 '''
+print("only keep the relations between the picked entities")
 sqlContext.sql(u"""
 	SELECT r.*
 	FROM mappingbased_objects_en1 AS r
@@ -139,6 +148,7 @@ sqlContext.sql(u"""
 '''
 save to a ttl file
 '''
+print("saving the relation results to the ttl file")
 sqlContext.sql(u"""
 	SELECT CONCAT(subject, ' ', relation, ' ', object, ' . ')
 	FROM mappingbased_objects_en_small
@@ -167,7 +177,8 @@ sqlContext.sql(u"""
 	""").show(1000, False)
 '''
 
-
+#########
+print("loading the type data")
 schema = StructType()\
 	.add("subject",StringType(),True)\
 	.add("relation",StringType(),True)\
@@ -179,6 +190,7 @@ instance_types_en = sqlContext.read.format('csv')\
 	.load('instance_types_en.ttl')
 instance_types_en.registerTempTable('instance_types_en')
 
+print("filtering the relation data according to the relation type")
 sqlContext.sql(u"""
 	SELECT *
 	FROM instance_types_en
@@ -187,6 +199,7 @@ sqlContext.sql(u"""
 instance_types_en = sqlContext.read.json("instance_types_en")
 instance_types_en.registerTempTable("instance_types_en")
 
+print("filter the relation data according to the picked entities")
 sqlContext.sql(u"""
 	SELECT t.* 
 	FROM instance_types_en as t
@@ -195,6 +208,7 @@ sqlContext.sql(u"""
 	""").write.mode("Overwrite").json("instance_types_en1")
 sqlContext.read.json("instance_types_en1").registerTempTable("instance_types_en1")
 
+print("removed the multiple types of the same entity")
 sqlContext.sql(u"""
 	SELECT subject, 
 	collect_set(relation)[0] as relation,
@@ -208,6 +222,7 @@ sqlContext.read.json("instance_types_en2").registerTempTable("instance_types_en2
 '''
 save to the ttl file
 '''
+print("saving the relation data to the ttl file")
 sqlContext.sql(u"""
 	SELECT CONCAT(subject, ' ', relation, ' ', object, ' . ')
 	FROM instance_types_en2
