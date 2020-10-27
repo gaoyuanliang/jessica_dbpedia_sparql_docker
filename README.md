@@ -1,5 +1,15 @@
 # sparql_docker
 
+```bash
+docker build -t jessica_sparql:1.0.1 .
+
+docker run -it \
+jessica_sparql:1.0.1 \
+bash
+
+python jessica_dbpedia_query_example.py
+```
+
 https://wiki.dbpedia.org/downloads-2016-10#datasets
 
 https://wiki.dbpedia.org/downloads-2016-10
