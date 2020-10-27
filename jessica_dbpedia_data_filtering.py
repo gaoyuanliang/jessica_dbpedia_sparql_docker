@@ -176,15 +176,15 @@ schema = StructType()\
 instance_types_en = sqlContext.read.format('csv')\
 	.options(delimiter=' ')\
 	.schema(schema)\
-	.load('/jessica/instance_types_en.ttl')
+	.load('instance_types_en.ttl')
 instance_types_en.registerTempTable('instance_types_en')
 
 sqlContext.sql(u"""
 	SELECT *
 	FROM instance_types_en
 	WHERE object LIKE "%dbpedia%org%ontology%"
-	""").write.mode("Overwrite").json("/jessica/instance_types_en")
-instance_types_en = sqlContext.read.json("/jessica/instance_types_en")
+	""").write.mode("Overwrite").json("instance_types_en")
+instance_types_en = sqlContext.read.json("instance_types_en")
 instance_types_en.registerTempTable("instance_types_en")
 
 sqlContext.sql(u"""
@@ -212,7 +212,7 @@ sqlContext.sql(u"""
 	SELECT CONCAT(subject, ' ', relation, ' ', object, ' . ')
 	FROM instance_types_en2
 	""").toPandas().to_csv(
-	"/jessica/instance_types_en_small.ttl",
+	"instance_types_en_small.ttl",
 	header = False,
 	index = False,
 	quoting = csv.QUOTE_NONE,
