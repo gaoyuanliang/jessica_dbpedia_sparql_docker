@@ -141,15 +141,16 @@ def attach_triplet_type_and_name(input_triplets):
 	entities = list(set([t['subject'] for t in input_triplets]+[t['object'] for t in input_triplets]))
 	entity_type_lookup = {}
 	entity_name_lookup = {}
+	outout_triplets = input_triplets
 	for e in entities:
 		entity_type_lookup[e] = find_entity_type(e)
 		entity_name_lookup[e] = id_to_name(e)
-	for t in input_triplets:
+	for t in outout_triplets:
 		t['subject_type'] = entity_type_lookup[t['subject']]
 		t['object_type'] = entity_type_lookup[t['object']]
 		t['subject_name'] = entity_name_lookup[t['subject']]
 		t['object_name'] = entity_name_lookup[t['object']]
-	return input_triplets, entity_type_lookup, entity_name_lookup
+	return outout_triplets, entity_type_lookup, entity_name_lookup
 
 '''
 input_triplets = [{'subject': 'http://dbpedia.org/resource/Dubai', 'relation': 'http://dbpedia.org/ontology/isPartOf', 'object': 'http://dbpedia.org/resource/United_Arab_Emirates'}, {'subject': 'http://dbpedia.org/resource/Abu_Dhabi', 'relation': 'http://dbpedia.org/ontology/isPartOf', 'object': 'http://dbpedia.org/resource/United_Arab_Emirates'}, {'subject': 'http://dbpedia.org/resource/Dubai', 'relation': 'http://dbpedia.org/ontology/governmentType', 'object': 'http://dbpedia.org/resource/Absolute_monarchy'}, {'subject': 'http://dbpedia.org/resource/Abu_Dhabi', 'relation': 'http://dbpedia.org/ontology/governmentType', 'object': 'http://dbpedia.org/resource/Absolute_monarchy'}]
