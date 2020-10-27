@@ -13,13 +13,11 @@ RUN pip install requests==2.24.0
 RUN pip install pyspark==3.0.1
 RUN pip install pandas==1.1.3
 
-RUN wget http://downloads.dbpedia.org/2016-10/core-i18n/en/mappingbased_objects_en.ttl.bz2
-
-RUN bzip2 -d mappingbased_objects_en.ttl.bz2
+RUN pip install gdown
+RUN gdown https://drive.google.com/uc?id=1iKkzwZsmTBBbk8O351qQp-hb3dV3yOB7
+RUN gdown https://drive.google.com/uc?id=1zaXTgJA7VpjSKXc8QjI3WLkbYf_vMZ8k
 
 RUN echo "gsdg"
-RUN wget https://raw.githubusercontent.com/gaoyuanliang/jessica_dbpedia_sparql_docker/main/jessica_dbpedia_data_filtering.py
-RUN python jessica_dbpedia_data_filtering.py
 
 RUN git clone https://github.com/gaoyuanliang/jessica_dbpedia_sparql_docker.git
 RUN mv jessica_dbpedia_sparql_docker/* ./
