@@ -37,9 +37,10 @@ def find_entity_type(entity_id):
 		output = re.sub(r'^.*\/', r'', types[0])
 		output = re.sub(r'[^A-z]+', r'_', output)
 		output = re.sub(r'^[^A-z]+|[^A-z]+$', r'', output)
-		return 
+		return output
 	except:
 		return 'Other'
+
 
 def relation_processing(renaltion_name):
 	output = re.sub(r'^.*\/', r'', renaltion_name)
@@ -48,7 +49,7 @@ def relation_processing(renaltion_name):
 	return output
 
 '''
-print(find_entity_type("http://dbpedia.org/resource/Abu_Dhabi"))
+print(relation_processing("http://dbpedia.org/ontology/ground"))
 '''
 
 def find_related_entities(
