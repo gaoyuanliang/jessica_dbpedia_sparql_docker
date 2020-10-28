@@ -30,17 +30,20 @@ def find_entity_type(entity_id):
 	try:
 		types = [t[1].toPython() for t in 
 			g_type.query(u"""
-			SELECT * WHERE {
+			SELECT ?r ?o WHERE {
 			<%s> ?r ?o .
 			} LIMIT 1
 			"""%(entity_id))]
-		output = re.sub(r'^.*\/', r'', types[0])
+		output = re.search(r'[^\/\\]+$', types[0]).group()
 		output = re.sub(r'[^A-z]+', r'_', output)
 		output = re.sub(r'^[^A-z]+|[^A-z]+$', r'', output)
 		return output
 	except:
 		return 'Other'
 
+'''
+find_entity_type('http://dbpedia.org/resource/Kohn_Pedersen_Fox')
+'''
 
 def relation_processing(renaltion_name):
 	output = re.sub(r'^.*\/', r'', renaltion_name)
@@ -149,7 +152,7 @@ def attach_triplet_type_and_name(input_triplets):
 	entities = list(set([t['subject'] for t in input_triplets]+[t['object'] for t in input_triplets]))
 	entity_type_lookup = {}
 	entity_name_lookup = {}
-	type_name_lookup = {}
+	relation_name_lookup = {}
 	outout_triplets = input_triplets
 	for e in entities:
 		entity_type_lookup[e] = find_entity_type(e)
@@ -157,15 +160,15 @@ def attach_triplet_type_and_name(input_triplets):
 	#######
 	types = list(set([t['relation'] for t in input_triplets]))
 	for t in types:
-		type_name_lookup[t] = relation_processing(t)
+		relation_name_lookup[t] = relation_processing(t)
 	######
 	for t in outout_triplets:
 		t['subject_type'] = entity_type_lookup[t['subject']]
 		t['object_type'] = entity_type_lookup[t['object']]
 		t['subject_name'] = entity_name_lookup[t['subject']]
 		t['object_name'] = entity_name_lookup[t['object']]
-		t['relation'] = type_name_lookup[t['relation']]
-	return outout_triplets, entity_type_lookup, entity_name_lookup, type_name_lookup
+		t['relation'] = relation_name_lookup[t['relation']]
+	return outout_triplets, entity_type_lookup, entity_name_lookup, relation_name_lookup
 
 '''
 input_triplets = [{'subject': 'http://dbpedia.org/resource/Dubai', 'relation': 'http://dbpedia.org/ontology/isPartOf', 'object': 'http://dbpedia.org/resource/United_Arab_Emirates'}, {'subject': 'http://dbpedia.org/resource/Abu_Dhabi', 'relation': 'http://dbpedia.org/ontology/isPartOf', 'object': 'http://dbpedia.org/resource/United_Arab_Emirates'}, {'subject': 'http://dbpedia.org/resource/Dubai', 'relation': 'http://dbpedia.org/ontology/governmentType', 'object': 'http://dbpedia.org/resource/Absolute_monarchy'}, {'subject': 'http://dbpedia.org/resource/Abu_Dhabi', 'relation': 'http://dbpedia.org/ontology/governmentType', 'object': 'http://dbpedia.org/resource/Absolute_monarchy'}]
