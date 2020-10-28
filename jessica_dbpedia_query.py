@@ -148,6 +148,45 @@ find_linking_entities(
 	common_subject_number = 1)
 '''
 
+def find_entity_pair_relation(
+	entity_id_1, 
+	entity_id_2,
+	relation_1_to_2_number,
+	relation_2_to_1_number):
+	output = []
+	######
+	try:
+		for stmt in g_relation.query(u"""
+			SELECT ?r  WHERE { <%s> ?r <%s> . } LIMIT %d
+			"""%(entity_id_1, entity_id_2, relation_1_to_2_number)):
+			output.append({'subject':entity_id_1,
+				'relation':stmt[0].toPython(),
+				'object': entity_id_2, 
+				})
+	except:
+		pass
+	######
+	try:
+		for stmt in g_relation.query(u"""
+			SELECT ?r  WHERE { <%s> ?r <%s> . } LIMIT %d
+			"""%(entity_id_2, entity_id_1, relation_2_to_1_number)):
+			output.append({'subject':entity_id_2,
+				'relation':stmt[0].toPython(),
+				'object': entity_id_1, 
+				})	
+	except:
+		pass
+	#####
+	return output
+
+'''
+find_entity_pair_relation(
+	entity_id_1 = "http://dbpedia.org/resource/United_Arab_Emirates",
+	entity_id_2 = "http://dbpedia.org/resource/Abu_Dhabi",
+	relation_1_to_2_number = 1,
+	relation_2_to_1_number = 2)
+'''
+
 def attach_triplet_type_and_name(input_triplets):
 	entities = list(set([t['subject'] for t in input_triplets]+[t['object'] for t in input_triplets]))
 	entity_type_lookup = {}
