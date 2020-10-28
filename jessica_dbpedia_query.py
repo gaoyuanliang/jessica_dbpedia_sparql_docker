@@ -34,13 +34,16 @@ def find_entity_type(entity_id):
 			<%s> ?r ?o .
 			} LIMIT 1
 			"""%(entity_id))]
-		return re.search(r'[^\/\\]+$', types[0]).group()
+		output = re.sub(r'^.*\/', r'', types[0])
+		output = re.sub(r'[^A-z]+', r'_', output)
+		output = re.sub(r'^[^A-z]+|[^A-z]+$', r'', output)
+		return 
 	except:
 		return 'Other'
 
 def relation_processing(renaltion_name):
 	output = re.sub(r'^.*\/', r'', renaltion_name)
-	output = re.sub(r'[^A-z]', r'_', output)
+	output = re.sub(r'[^A-z]+', r'_', output)
 	output = re.sub(r'^[^A-z]+|[^A-z]+$', r'', output)
 	return output
 
