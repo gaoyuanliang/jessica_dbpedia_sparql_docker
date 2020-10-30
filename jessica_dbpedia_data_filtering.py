@@ -1,4 +1,4 @@
-#############jessica_dbpedia_data_filtering.py#############
+#############jessica_dbpedia_data_filtering.py#######
 '''
 https://github.com/tyrex-team/sparqlgx
 
@@ -7,6 +7,8 @@ RUN bzip2 -d mappingbased_objects_en.ttl.bz2
 
 RUN wget http://downloads.dbpedia.org/2016-10/core-i18n/en/instance_types_en.ttl.bz2
 RUN bzip2 -d instance_types_en.ttl.bz2
+
+https://wiki.dbpedia.org/downloads-2016-10
 
 '''
 
@@ -24,224 +26,199 @@ sqlContext = SparkSession.builder.getOrCreate()
 load the data
 '''
 print('loading the data')
+
 schema = StructType()\
 	.add("subject",StringType(),True)\
 	.add("relation",StringType(),True)\
 	.add("object",StringType(),True)
 
+out_degree_en = sqlContext.read.format('csv')\
+	.options(delimiter=' ')\
+	.schema(schema)\
+	.load('/jessica/out_degree_en.ttl')
+out_degree_en.registerTempTable('out_degree_en')
+
+def extract_outdegree(input):
+	try:
+		input = input.strip()
+		outdegree = re.search(r'\"(?P<outdegree>\d+)\"\^\^', input).group('outdegree')
+		outdegree = int(outdegree)
+		return outdegree
+	except:
+		return None
+
+udf_extract_outdegree = udf(extract_outdegree, IntegerType())
+
+out_degree_en.withColumn('outdegree', udf_extract_outdegree('object')).write.mode("Overwrite").json("/jessica/out_degree_en1")
+sqlContext.read.json("/jessica/out_degree_en1").registerTempTable("out_degree_en1")
+
+sqlContext.sql(u"""
+	SELECT *, ROW_NUMBER() OVER ( ORDER BY outdegree DESC ) AS outdegree_rank
+	FROM out_degree_en1
+	""").write.mode("Overwrite").json("/jessica/out_degree_en2")
+sqlContext.read.json("/jessica/out_degree_en2").registerTempTable("out_degree_en2")
+
+'''
+2274166
+3660637
+4780541
+100000
+'''
+
+sqlContext.sql(u"""
+	SELECT * FROM out_degree_en2 WHERE outdegree_rank <= 500000
+	""").write.mode("Overwrite").json("/jessica/out_degree_en_small")
+sqlContext.read.json("/jessica/out_degree_en_small").registerTempTable("out_degree_en_small")
+
+########relation
+
 mappingbased_objects_en = sqlContext.read.format('csv')\
 	.options(delimiter=' ')\
 	.schema(schema)\
-	.load('mappingbased_objects_en.ttl')
+	.load('/jessica/mappingbased_objects_en.ttl')
 mappingbased_objects_en.registerTempTable('mappingbased_objects_en')
-
-
-'''
-filter according to the relation
-'''
-print('filter the data according to the relation')
 
 sqlContext.sql(u"""
 	SELECT *
 	FROM mappingbased_objects_en
 	WHERE relation LIKE "%dbpedia%org%ontology%"
-	""").write.mode("Overwrite").json("mappingbased_objects_en1")
+	""").write.mode("Overwrite").json("/jessica/mappingbased_objects_en1")
+sqlContext.read.json("/jessica/mappingbased_objects_en1").registerTempTable("mappingbased_objects_en1")
 
-'''
-count the subject and object of each entity
-'''
-print('count the subject and object of each entity')
-mappingbased_objects_en1 = sqlContext.read.json("mappingbased_objects_en1")
-mappingbased_objects_en1.registerTempTable('mappingbased_objects_en1')
-#18111905
-
-sqlContext.sql(u"""
-	SELECT subject AS entity, COUNT(DISTINCT object) AS object_count
-	FROM mappingbased_objects_en1
-	GROUP BY subject
-	""").write.mode('Overwrite').json('entity_object_count')
-
-sqlContext.sql(u"""
-	SELECT object AS entity, COUNT(DISTINCT subject) AS subject_count
-	FROM mappingbased_objects_en1
-	GROUP BY object
-	""").write.mode('Overwrite').json('entity_subject_count')
-
-sqlContext.read.json("entity_*_count").registerTempTable("entity_count")
-sqlContext.sql(u"""
-	SELECT entity, 
-	CASE 
-		WHEN object_count IS NULL THEN 0
-		ELSE object_count
-	END AS object_count,
-	CASE 
-		WHEN subject_count IS NULL THEN 0
-		ELSE subject_count
-	END AS subject_count
-	FROM (
-	SELECT entity, 
-	COLLECT_SET(object_count)[0] AS object_count,
-	COLLECT_SET(subject_count)[0] AS subject_count
-	FROM entity_count
-	GROUP BY entity
-	) AS temp
-	""").write.mode('Overwrite').json('entity_count1')
-
-sqlContext.read.json("entity_count1").registerTempTable("entity_count1")
-
-'''
-sqlContext.sql(u"""
-	SELECT * FROM entity_count1
-	WHERE entity LIKE "%Mohammed_bin_Rashid_Al_Maktoum%"
-	""").show(100, False)
-
-+------------------------------------------------------------------------+------------+-------------+
-|entity                                                                  |object_count|subject_count|
-+------------------------------------------------------------------------+------------+-------------+
-|<http://dbpedia.org/resource/Mohammed_bin_Rashid_Al_Maktoum>            |11          |69           |
-|<http://dbpedia.org/resource/Manal_bint_Mohammed_bin_Rashid_Al_Maktoum> |4           |1            |
-|<http://dbpedia.org/resource/Hamdan_bin_Mohammed_bin_Rashid_Al_Maktoum> |0           |1            |
-|<http://dbpedia.org/resource/Maitha_bint_Mohammed_bin_Rashid_Al_Maktoum>|1           |0            |
-|<http://dbpedia.org/resource/Maktoum_bin_Mohammed_bin_Rashid_Al_Maktoum>|0           |2            |
-|<http://dbpedia.org/resource/Sheikh_Mohammed_bin_Rashid_Al_Maktoum>     |0           |2            |
-|<http://dbpedia.org/resource/Majid_bin_Mohammed_bin_Rashid_Al_Maktoum>  |1           |0            |
-+------------------------------------------------------------------------+------------+-------------+
-'''
-
-
-'''
-sort the entities according to the sum of the subject and object count
-pick the top 500000 entities
-'''
-print(u"""
-	sort the entities according to the sum of the subject and object count
-	pick the top 500000 entities
-	""")
-sqlContext.sql(u"""
-	SELECT *
-	FROM entity_count1
-	ORDER BY object_count+subject_count DESC
-	LIMIT 500000
-	""").write.mode('Overwrite').json('entity_count2')
-#1797868
-
-sqlContext.read.json("entity_count2").registerTempTable("entity_count2")
-
-'''
-sqlContext.sql(u"""
-	SELECT * FROM entity_count2
-	WHERE entity  LIKE "%Abu_Dhabi%"
-	ORDER BY object_count+subject_count ASC
-	""").show(100, False)
-'''
-
-'''
-only keep the relations between the picked entities
-'''
-print("only keep the relations between the picked entities")
-sqlContext.sql(u"""
-	SELECT r.*
-	FROM mappingbased_objects_en1 AS r
-	JOIN  entity_count2 AS s ON s.entity = r.subject
-	JOIN  entity_count2 AS o ON o.entity = r.object
-	""").write.mode('Overwrite').json('mappingbased_objects_en_small')
-
-sqlContext.read.json("mappingbased_objects_en_small").registerTempTable("mappingbased_objects_en_small")
-sqlContext.sql(u"""
-	SELECT COUNT(*) FROM mappingbased_objects_en_small
-	""").show()
-#228844
-
-'''
-save to a ttl file
-'''
-print("saving the relation results to the ttl file")
-sqlContext.sql(u"""
-	SELECT CONCAT(subject, ' ', relation, ' ', object, ' . ')
-	FROM mappingbased_objects_en_small
-	""").toPandas().to_csv(
-	"mappingbased_objects_en_small.ttl",
-	header = False,
-	index = False,
-	quoting = csv.QUOTE_NONE,
-	quotechar="",  
-	escapechar="\\",
-	sep="\t")
-
-'''
-sqlContext.sql(u"""
-	SELECT relation, COUNT(*) AS triplet_count
-	FROM mappingbased_objects_en1
-	GROUP BY relation
-	""").write.mode('Overwrite').json('triplet_count')
-
-sqlContext.read.json("triplet_count").registerTempTable("triplet_count")
-sqlContext.sql(u"""
-	SELECT * 
-	FROM triplet_count
-	ORDER BY relation DESC
-	LIMIT 1000
-	""").show(1000, False)
-'''
-
-
-
-#############################################
-print("loading the type data")
-schema = StructType()\
-	.add("subject",StringType(),True)\
-	.add("relation",StringType(),True)\
-	.add("object",StringType(),True)
+######type
 
 instance_types_en = sqlContext.read.format('csv')\
 	.options(delimiter=' ')\
 	.schema(schema)\
-	.load('instance_types_en.ttl')
+	.load('/jessica/instance_types_en.ttl')
 instance_types_en.registerTempTable('instance_types_en')
 
-print("filtering the relation data according to the relation type")
 sqlContext.sql(u"""
 	SELECT *
 	FROM instance_types_en
 	WHERE object LIKE "%dbpedia%org%ontology%"
-	""").write.mode("Overwrite").json("instance_types_en")
-instance_types_en = sqlContext.read.json("instance_types_en")
-instance_types_en.registerTempTable("instance_types_en")
+	""").write.mode("Overwrite").json("/jessica/instance_types_en1")
+sqlContext.read.json("/jessica/instance_types_en1").registerTempTable("instance_types_en1")
 
-print("filter the relation data according to the picked entities")
+####wikipage id
+
+page_ids_en = sqlContext.read.format('csv')\
+	.options(delimiter=' ')\
+	.schema(schema)\
+	.load('/jessica/page_ids_en.ttl')
+page_ids_en.registerTempTable('page_ids_en')
+
+######merget type and pageid to one table
+
 sqlContext.sql(u"""
-	SELECT t.* 
-	FROM instance_types_en as t
-	JOIN entity_count2 AS e
-	ON e.entity = t.subject
-	""").write.mode("Overwrite").json("instance_types_en1")
-sqlContext.read.json("instance_types_en1").registerTempTable("instance_types_en1")
+	SELECT out_degree_en_small.*,
+	instance_types_en1.relation AS type_relation, 
+	instance_types_en1.object AS type_object
+	FROM out_degree_en_small
+	LEFT JOIN instance_types_en1
+	ON instance_types_en1.subject = out_degree_en_small.subject
+	""").write.mode("Overwrite").json("temp1")
+sqlContext.read.json("temp1").registerTempTable("temp1")
 
-print("removed the multiple types of the same entity")
 sqlContext.sql(u"""
-	SELECT subject, 
-	collect_set(relation)[0] as relation,
-	collect_set(object)[0] as object
-	from instance_types_en1
-	group by subject
-	""").write.mode("Overwrite").json("instance_types_en2")
+	SELECT temp1.*,
+	page_ids_en.relation AS wikipage_relation, 
+	page_ids_en.object AS wikipage_object
+	FROM temp1
+	LEFT JOIN page_ids_en 
+	ON page_ids_en.subject = temp1.subject
+	""").write.mode("Overwrite").json("/jessica/entity_type_wikipage_small")
+sqlContext.read.json("/jessica/entity_type_wikipage_small").registerTempTable("entity_type_wikipage_small")
 
-sqlContext.read.json("instance_types_en2").registerTempTable("instance_types_en2")
+sqlContext.sql(u"""
+	SELECT 
+	CASE 
+		WHEN type_relation IS NOT NULL AND type_object IS NOT NULL 
+		THEN 
+		CONCAT(subject, ' ', relation, ' ', object, ' ; ',
+		type_relation, ' ', type_object, ' ; ',
+		wikipage_relation, ' ', wikipage_object, ' . ')
+		ELSE 
+		CONCAT(subject, ' ', relation, ' ', object, ' ; ',
+		wikipage_relation, ' ', wikipage_object, ' . ')
+	END
+	FROM entity_type_wikipage_small
+	WHERE wikipage_object IS NOT NULL
+	""").write.mode("Overwrite").format("text").save("/jessica/entity_type_wikipage_small1")
 
 '''
-save to the ttl file
+cat entity_type_wikipage_small1/* > entity_type_wikipage_small.ttl
 '''
-print("saving the relation data to the ttl file")
-sqlContext.sql(u"""
-	SELECT CONCAT(subject, ' ', relation, ' ', object, ' . ')
-	FROM instance_types_en2
-	""").toPandas().to_csv(
-	"instance_types_en_small.ttl",
-	header = False,
-	index = False,
-	quoting = csv.QUOTE_NONE,
-	quotechar="",  
-	escapechar="\\",
-	sep="\t")
 
-#############jessica_dbpedia_data_filtering.py#############
+########save the relation to one table
+
+sqlContext.sql(u"""
+	SELECT mappingbased_objects_en1.* 
+	FROM mappingbased_objects_en1
+	JOIN out_degree_en_small
+	ON out_degree_en_small.subject = mappingbased_objects_en1.subject
+	""").write.mode("Overwrite").json("temp1")
+sqlContext.read.json("temp1").registerTempTable("temp1")
+sqlContext.sql(u"""
+	SELECT temp1.*
+	FROM temp1
+	JOIN out_degree_en_small
+	ON out_degree_en_small.subject = temp1.object
+	""").write.mode("Overwrite").json("/jessica/mappingbased_objects_en_small")
+sqlContext.read.json("/jessica/mappingbased_objects_en_small").registerTempTable("mappingbased_objects_en_small")
+
+sqlContext.sql(u"""
+	SELECT DISTINCT 
+	CONCAT(subject, ' ', relation, ' ', object, ' . ')
+	FROM mappingbased_objects_en_small
+	""").write.mode("Overwrite").format("text").save("/jessica/mappingbased_objects_en_small1")
+
+'''
+cat mappingbased_objects_en_small1/* > mappingbased_objects_en_small.ttl
+cat mappingbased_objects_en_small/* | wc -l 
+1294722
+'''
+
+'''
+test
+'''
+import os
+import time
+import rdflib
+
+start_time = time.time()
+g = rdflib.Graph()
+g.parse("/jessica/entity_type_wikipage_small.ttl", format='ttl')
+print('loading time:\t %f'%(time.time()-start_time))
+
+entities = [(t[0].toPython(), t[1].toPython(), t[2].toPython()) for t in 
+	g.query(u"""
+	SELECT ?entity ?wikipage ?type
+	WHERE { 
+	?entity <http://dbpedia.org/ontology/wikiPageID> ?wikipage .
+	?entity <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type .
+	} LIMIT 10
+	""")]
+
+for e in entities:
+	try:
+		print(e)
+	except:
+		pass
+
+start_time = time.time()
+g1 = rdflib.Graph()
+g1.parse("/jessica/mappingbased_objects_en_small.ttl", format='ttl')
+print('loading time:\t %f'%(time.time()-start_time))
+#loading time:	 245.068069
+
+relations = [(t[0].toPython(), t[1].toPython(), t[2].toPython()) for t in 
+	g1.query(u"""
+	SELECT ?s ?r ?o
+	WHERE { ?s ?r ?o } LIMIT 10
+	""")]
+
+for r in relations:
+	print(r)
+
+#############jessica_dbpedia_data_filtering.py#######
