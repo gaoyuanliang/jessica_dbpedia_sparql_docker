@@ -10,12 +10,12 @@ print('loading the DBpedia knowledge base')
 start_time = time.time()
 ######
 mappingbased_objects_en_small = g_relation.parse(
-	"/jessica/mappingbased_objects_en_small.ttl", 
+	"mappingbased_objects_en_small.ttl", 
 	format='ttl')
 print(mappingbased_objects_en_small)
 ######
 entity_type_wikipage_small = g_type.parse(
-	"/jessica/entity_type_wikipage_small.ttl", 
+	"entity_type_wikipage_small.ttl", 
 	format='ttl')
 print(entity_type_wikipage_small)
 #######
