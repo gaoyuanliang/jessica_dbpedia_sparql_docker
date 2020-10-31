@@ -6,18 +6,20 @@ g_relation = rdflib.Graph()
 g_type = rdflib.Graph()
 
 print('loading the DBpedia knowledge base')
-
+start_time = time.time()
+######
 mappingbased_objects_en_small = g_relation.parse(
 	"/jessica/mappingbased_objects_en_small.ttl", 
 	format='ttl')
 print(mappingbased_objects_en_small)
-
-instance_types_en_small = g_type.parse(
-	"/jessica/instance_types_en_small.ttl", 
+######
+entity_type_wikipage_small = g_type.parse(
+	"/jessica/entity_type_wikipage_small.ttl", 
 	format='ttl')
-print(instance_types_en_small)
-
-print('knolwedge based loading completed.')
+print(entity_type_wikipage_small)
+#######
+print('knolwedge based loading completed. loading time %f seconds'%(time.time() - start_time))
+#knolwedge based loading completed. loading time 500.878870 seconds
 
 #######
 
@@ -26,12 +28,23 @@ def id_to_name(entity_id):
 	entity_id = re.sub(r'[^a-zA-Z\d\.]+', r' ', entity_id)
 	return entity_id
 
+def wikipage_id_to_dbpedia_id(wikipage_id):
+	try:
+		return [t[0].toPython() for t in 
+			g_type.query(u"""
+			SELECT ?dbpedia_id WHERE {
+			?dbpedia_id <http://dbpedia.org/ontology/wikiPageID> "%s"^^<http://www.w3.org/2001/XMLSchema#integer> .
+			} LIMIT 1
+			"""%(str(wikipage_id)))][0]
+	except:
+		return None
+
 def find_entity_type(entity_id):
 	try:
-		types = [t[1].toPython() for t in 
+		types = [t[0].toPython() for t in 
 			g_type.query(u"""
-			SELECT ?r ?o WHERE {
-			<%s> ?r ?o .
+			SELECT ?type WHERE {
+			<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?type .
 			} LIMIT 1
 			"""%(entity_id))]
 		output = re.search(r'[^\/\\]+$', types[0]).group()
@@ -42,7 +55,25 @@ def find_entity_type(entity_id):
 		return 'Other'
 
 '''
-find_entity_type('http://dbpedia.org/resource/Kohn_Pedersen_Fox')
+dbpedia_id = wikipage_id_to_dbpedia_id("18950756")
+dbpedia_type = find_entity_type(dbpedia_id)
+triplets = find_related_entities(dbpedia_id,
+	related_subject_num = 10,
+	related_object_num = 10)
+
+print(dbpedia_id, dbpedia_type)
+for t in triplets:
+	print(t)
+
+start_time = time.time()
+wikipage_id_to_dppedia_id_type("211583", "/jessica/entity_type_wikipage_small.ttl")
+print(time.time()-start_time)
+
+start_time = time.time()
+dbpedia_id = wikipage_id_to_dbpedia_id("211583")
+dbpedia_type = find_entity_type(dbpedia_id)
+print(time.time()-start_time)
+
 '''
 
 def relation_processing(renaltion_name):
