@@ -8,20 +8,29 @@ g_type = rdflib.Graph()
 
 print('loading the DBpedia knowledge base')
 start_time = time.time()
-######
-mappingbased_objects_en_small = g_relation.parse(
-	"mappingbased_objects_en_small.ttl", 
-	format='ttl')
-print(mappingbased_objects_en_small)
-######
-entity_type_wikipage_small = g_type.parse(
-	"entity_type_wikipage_small.ttl", 
-	format='ttl')
-print(entity_type_wikipage_small)
+
+try:
+	mappingbased_objects_en_small = g_relation.parse(
+		"mappingbased_objects_en_tinny.ttl", 
+		format='ttl')
+	entity_type_wikipage_small = g_type.parse(
+		"entity_type_wikipage_tinny.ttl", 
+		format='ttl')
+except:
+	######
+	mappingbased_objects_en_small = g_relation.parse(
+		"mappingbased_objects_en_small.ttl", 
+		format='ttl')
+	print(mappingbased_objects_en_small)
+	######
+	entity_type_wikipage_small = g_type.parse(
+		"entity_type_wikipage_small.ttl", 
+		format='ttl')
+	print(entity_type_wikipage_small)
+
 #######
 print('knolwedge based loading completed. loading time %f seconds'%(time.time() - start_time))
-
-
+#knolwedge based loading completed. loading time 1300.492393 seconds
 #knolwedge based loading completed. loading time 929.861950 seconds
 
 #######
