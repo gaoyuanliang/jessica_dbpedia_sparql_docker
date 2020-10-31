@@ -20,7 +20,9 @@ entity_type_wikipage_small = g_type.parse(
 print(entity_type_wikipage_small)
 #######
 print('knolwedge based loading completed. loading time %f seconds'%(time.time() - start_time))
-#knolwedge based loading completed. loading time 500.878870 seconds
+
+
+#knolwedge based loading completed. loading time 929.861950 seconds
 
 #######
 
@@ -173,11 +175,12 @@ def find_linking_entities(
 	return output
 
 '''
-find_linking_entities(
+for t in find_linking_entities(
 	entity_id_1 = "http://dbpedia.org/resource/Dubai",
 	entity_id_2 = "http://dbpedia.org/resource/Abu_Dhabi",
-	common_object_number = 1,
-	common_subject_number = 1)
+	common_object_number = 2,
+	common_subject_number = 2):
+	print(t)
 '''
 
 def find_entity_pair_relation(
@@ -212,11 +215,12 @@ def find_entity_pair_relation(
 	return output
 
 '''
-find_entity_pair_relation(
+for t in find_entity_pair_relation(
 	entity_id_1 = "http://dbpedia.org/resource/United_Arab_Emirates",
 	entity_id_2 = "http://dbpedia.org/resource/Abu_Dhabi",
 	relation_1_to_2_number = 1,
-	relation_2_to_1_number = 2)
+	relation_2_to_1_number = 2):
+	print(t)
 '''
 
 def attach_triplet_type_and_name(input_triplets):
@@ -243,6 +247,9 @@ def attach_triplet_type_and_name(input_triplets):
 
 '''
 input_triplets = [{'subject': 'http://dbpedia.org/resource/Dubai', 'relation': 'http://dbpedia.org/ontology/isPartOf', 'object': 'http://dbpedia.org/resource/United_Arab_Emirates'}, {'subject': 'http://dbpedia.org/resource/Abu_Dhabi', 'relation': 'http://dbpedia.org/ontology/isPartOf', 'object': 'http://dbpedia.org/resource/United_Arab_Emirates'}, {'subject': 'http://dbpedia.org/resource/Dubai', 'relation': 'http://dbpedia.org/ontology/governmentType', 'object': 'http://dbpedia.org/resource/Absolute_monarchy'}, {'subject': 'http://dbpedia.org/resource/Abu_Dhabi', 'relation': 'http://dbpedia.org/ontology/governmentType', 'object': 'http://dbpedia.org/resource/Absolute_monarchy'}]
-input_triplets, entity_type_lookup, entity_name_lookup = attach_triplet_type_and_name(input_triplets)
+output_triplets, entity_type_lookup, entity_name_lookup, relation_name_lookup = attach_triplet_type_and_name(input_triplets)
+
+for t in output_triplets:
+	print(t)
 '''
 #######jessica_dbpedia_query.py#######
