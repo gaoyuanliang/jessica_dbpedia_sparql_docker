@@ -1,5 +1,6 @@
 #######jessica_dbpedia_query.py#######
 import re
+import time
 import rdflib
 
 g_relation = rdflib.Graph()
