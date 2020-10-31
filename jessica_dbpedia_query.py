@@ -16,6 +16,7 @@ try:
 	entity_type_wikipage_small = g_type.parse(
 		"entity_type_wikipage_tinny.ttl", 
 		format='ttl')
+	print('tinny knowledge graph loaded')
 except:
 	######
 	mappingbased_objects_en_small = g_relation.parse(
@@ -27,6 +28,7 @@ except:
 		"entity_type_wikipage_small.ttl", 
 		format='ttl')
 	print(entity_type_wikipage_small)
+	print('small knowledge graph loaded')
 
 #######
 print('knolwedge based loading completed. loading time %f seconds'%(time.time() - start_time))
